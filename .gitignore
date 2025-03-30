@@ -1,0 +1,89 @@
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
+
+# Byte-compiled / optimized / DLL files
+__pycache__
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.eggs/
+dist/
+build/
+sdist/
+*.egg-info/
+*.whl
+*.egg
+
+# Installed packages
+# Edit this if using virtualenv
+venv/
+env/
+ENV/
+.venv/
+.env/
+myvenv/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx stuff:
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Editor/IDE stuff
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+tmp/
+tmp*
+*.tmp
+
+# OS generated files #
+.DS_Store
+Thumbs.db
+
+# Config files that may contain secrets
+config.ini
+YOUR_SECRET_CONFIG_FILE.ini # Добавьте имена ваших секретных файлов
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+
+# Virtualenv
+.venv
+venv
+env
