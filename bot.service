@@ -1,0 +1,14 @@
+[Unit]
+Description=af shaka tg bot for registration at shaka tournaments from AF Academy
+After=syslog.target
+After=network.target
+
+[Service]
+Type=simple
+User=af_bot
+WorkingDirectory=/home/af_bot/shaka_bot
+ExecStart=/bin/bash -c "source /home/af_bot/venv/bin/activate && python main.py"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
