@@ -75,13 +75,9 @@ Thumbs.db
 
 # Config files that may contain secrets
 config.ini
-YOUR_SECRET_CONFIG_FILE.ini # Добавьте имена ваших секретных файлов
+.env
+/.env
 
-# Log files
-*.log
-
-# Temporary files
-*.tmp
 
 # Virtualenv
 .venv
