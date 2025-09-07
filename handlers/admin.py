@@ -51,7 +51,7 @@ async def parse_af_results(message: Message, state: FSMContext):
             await message.answer(event_title)
         except KeyError:
             await message.answer(key_error_text)
-    reply = results_af_parser(url)
-    async for names in reply:
+    reply = await results_af_parser(url)
+    for names in reply:
         await message.answer(names if names else key_error_text)
     await state.clear()
