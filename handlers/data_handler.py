@@ -79,14 +79,14 @@ async def get_valid_event_id(message: Message):
     logger.info(f"Начало обработки сообщения: {message.text}")
     input_str = message.text
     input_str = input_str.strip()  # Удаляем пробелы в начале и конце
-    logger.debug(f"Текст сообщения после удаления пробелов: '{input_str}'")
+    logger.info(f"Текст сообщения после удаления пробелов: '{input_str}'")
 
     # Проверка на число
     if input_str.isdigit():
-        logger.debug(f"Ввод является числом: '{input_str}'")
+        logger.info(f"Ввод является числом: '{input_str}'")
         try:
             event_id = int(input_str)
-            logger.debug(f"Преобразовано в int: {event_id}")
+            logger.info(f"Преобразовано в int: {event_id}")
             return event_id
         except ValueError:
             logger.warning(f"Не удалось преобразовать в int: '{input_str}'")
@@ -137,11 +137,11 @@ async def check_valid_event_id(message: Message, event_id):
     logger.info(f"Начало проверки event_id: {event_id}")
     try:
         # Создаем экземпляр API клиента, передавая event_id
-        logger.debug(f"Создание клиента API ShakaSports с event_id: {event_id}")
+        logger.info(f"Создание клиента API ShakaSports с event_id: {event_id}")
         async with ShakaSportsApiClient(event_id) as client:
             # Вызываем метод для получения данных о возрастных категориях.
             # Если вызов успешен, значит, event_id корректный
-            logger.debug("Вызов метода client.get_age_divisions()")
+            logger.info("Вызов метода client.get_age_divisions()")
             await client.get_age_divisions()
             logger.info(f"Проверка event_id {event_id} прошла успешно.")
         return event_id
@@ -239,33 +239,6 @@ async def format_phone_number(message: Message, phone_number: str) -> str | None
 
     formatted_number = f"+7 ({phone_number[0:3]}) {phone_number[3:6]}-{phone_number[6:8]}-{phone_number[8:10]}"
     return formatted_number
-
-
-async def format_email(message: Message, email: str) -> str | None:
-    """
-    Принимает строку, проверяет, что она является валидным email адресом.
-    Если email валиден, возвращает его.
-    Отправляет сообщение об ошибке, если не удалось обработать.
-
-    Args:
-        message: Объект сообщения aiogram.
-        email: Строка с email адресом.
-
-    Returns:
-        Строку с email если валидно, None если нет.
-    """
-    if not isinstance(email, str):
-        await message.answer('Email должен содержать текст')
-        return None
-
-    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-
-    if not re.match(email_regex, email):
-        await message.answer("Некорректный email")
-        return None
-
-    return email
-
 
 def get_division_info(data_dict):
     """
