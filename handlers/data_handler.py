@@ -172,30 +172,6 @@ async def show_event_title(message: Message, event_id):
         title = await client.get_event_title()
         await message.answer(f'Турнир найден - {title}')
 
-
-async def get_valid_name(message: Message, name: str) -> str | None:
-    """
-    Проверяет, что имя состоит только из букв латинского или кириллического алфавита.
-    Отправляет сообщение об ошибке, если имя не соответствует требованиям.
-
-    Args:
-        message: Объект сообщения aiogram.
-        name: Строка, представляющая имя для проверки.
-
-    Returns:
-        Строку имени, если оно валидно, None в случае ошибки.
-    """
-    if not isinstance(name, str):
-        await message.answer('Пожалуйста, введите имя текстом.')
-        return None
-
-    pattern = r"^[a-zA-Zа-яА-ЯёЁ\s]+$"
-    if not re.match(pattern, name):
-        await message.answer("Пожалуйста, используйте только буквы латинского или кириллического алфавита.")
-        return None
-
-    return name
-
 def get_division_info(data_dict):
     """
    Извлекает информацию о возрастных дивизионах из словаря.

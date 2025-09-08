@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, Field
 
 class UserEmail(BaseModel):
     email: EmailStr
@@ -26,5 +26,9 @@ class PhoneNumber(BaseModel):
             raise ValueError('Похоже номер слишком длинный!')
 
         return cleaned
+
+class UserName(BaseModel):
+    name: str = Field(min_length=3,
+                      pattern=r'^[a-zA-Zа-яА-ЯёЁ\s\-]+$')
 
 
