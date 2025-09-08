@@ -1,17 +1,59 @@
 import asyncio
-from typing import Optional
+import os
 
 from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, Message, FSInputFile
+from aiogram.types import CallbackQuery, Message, FSInputFile, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
 
 from keyboards import keyboards as kb
 from filters.filters import EmptyStateCallbackFilter, EmptyStateMessageFilter
-from keyboards.inline_keyboards import *  # Импортируем все нужные функции
-from config import *
-from handlers.data_handler import *
+from keyboards.inline_keyboards import (
+    create_start_btn_keyboard,
+    create_back_step_keyboard,
+    create_academy_keyboard,
+    create_age_division_keyboard,
+    create_weight_keyboard,
+    get_event_id,
+    create_sex_div_keyboard,
+    create_division_keyboard,
+    create_confirm_registration_keyboard,
+    get_division_info,
+    create_finish_registration_keyboard,
+    create_new_reg_keyboard,
+)
+from config import (
+    oferta_text,
+    menu,
+    event_id_text,
+    greeting_photo_path,
+    greeting_text,
+    start_btn,
+    name_text,
+    EVENT_FLAG_FINISH,
+    event_id_another_text,
+    email_text,
+    invalid_name,
+    tel_text,
+    invalid_email,
+    team_id_text,
+    EVENT_FLAG_NO_SEX_DIVISION,
+    age_id_text,
+    weight_info_text,
+    confirm_text,
+    sex_info_text,
+    division_id_text,
+    EVENT_FLAG_NO_DIVISION,
+    academy_titles,
+    make_choice_text,
+    back_step_btn,
+)
+from handlers.data_handler import (
+    get_valid_event_id,
+    check_valid_event_id,
+    show_event_title,
+)
 from handlers.data_handler import ShakaSportsApiClient
 from models.models import UserEmail, PhoneNumber, UserName
 from pydantic import ValidationError
@@ -23,7 +65,7 @@ users = Router()
 
 load_dotenv()
 # Инициализация бота с использованием токена
-bot = Bot(token=os.getenv('TOKEN'))
+bot = Bot(token=os.getenv("TOKEN"))
 
 
 # --- Message No states Handler Button ---
@@ -32,8 +74,10 @@ async def handle_message__empty_states(message: Message):
     """
     Хендлер, который реагирует если YCF сбросил состояние.
     """
-    await message.answer(text="Время ождидания вышло. Пожалуйста, начните сначала",
-                         reply_markup=create_start_btn_keyboard())
+    await message.answer(
+        text="Время ождидания вышло. Пожалуйста, начните сначала",
+        reply_markup=create_start_btn_keyboard(),
+    )
 
 
 # --- Callback No states Handler Button ---
@@ -43,8 +87,10 @@ async def handle_callback_empty_states(callback: CallbackQuery):
     Хендлер, который реагирует если YCF сбросил состояние.
     """
     await callback.answer()
-    await callback.message.answer(text="Время ождидания вышло. Пожалуйста, начните сначала",
-                                  reply_markup=create_start_btn_keyboard())
+    await callback.message.answer(
+        text="Время ождидания вышло. Пожалуйста, начните сначала",
+        reply_markup=create_start_btn_keyboard(),
+    )
 
 
 async def typing(message: Message):
@@ -70,7 +116,7 @@ async def del_states_except_event(state: FSMContext):
     """
     data = await state.get_data()
     for states in data:
-        if states == 'event_id':
+        if states == "event_id":
             continue
         await state.update_data({states: None})
 
@@ -88,18 +134,20 @@ async def greeting(message: Message, state: FSMContext):
         state (FSMContext): Объект FSM контекста для управления состоянием.
     """
     await state.clear()
-    await state.update_data(start=False)  #не первое взаимодествие с ботом - пользователь сам нажал сначала
+    await state.update_data(
+        start=False
+    )  # не первое взаимодествие с ботом - пользователь сам нажал сначала
     await typing(message)
     await message.answer_photo(
         photo=FSInputFile(greeting_photo_path),
-        caption=f'{message.from_user.first_name}, {greeting_text}',
-        reply_markup=kb.keyboard
+        caption=f"{message.from_user.first_name}, {greeting_text}",
+        reply_markup=kb.keyboard,
     )
     await typing(message)
-    await message.answer(text=f'{oferta_text}', parse_mode='MarkdownV2')
+    await message.answer(text=f"{oferta_text}", parse_mode="MarkdownV2")
     await typing(message)
-    await message.answer(text=f'{message.from_user.first_name}, {menu}')
-    await message.answer(text=f'{message.from_user.first_name}, {event_id_text}')
+    await message.answer(text=f"{message.from_user.first_name}, {menu}")
+    await message.answer(text=f"{message.from_user.first_name}, {event_id_text}")
     await state.set_state(Form.event_id)
 
 
@@ -129,14 +177,18 @@ async def start_inline_btn__handler(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     # удаляет inline меню после выбора
-    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+    await bot.delete_message(
+        chat_id=callback.message.chat.id, message_id=callback.message.message_id
+    )
     await callback.answer()
     message = callback.message
     await greeting(message, state)
 
 
 # --- Handler Registration Event Number ---
-@users.callback_query(F.data.regexp(r"^\d{3,5}$"))  # Фильтр для 3-5 цифр в callback_data
+@users.callback_query(
+    F.data.regexp(r"^\d{3,5}$")
+)  # Фильтр для 3-5 цифр в callback_data
 async def reg_new_sportsman_handler(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик нажатия на кнопку с номером турнира (3-5 цифр).
@@ -173,15 +225,19 @@ async def id_event_handler(message: Message, state: FSMContext):
         if not no_event_finished_set:
             if event_id:
                 await show_event_title(message, event_id)
-                await state.update_data(event_id=str(event_id))  # Сохраняем event_id в FSM в String
+                await state.update_data(
+                    event_id=str(event_id)
+                )  # Сохраняем event_id в FSM в String
                 await state.set_state(Form.name)
                 await typing(message)
-                await message.answer(text=name_text, reply_markup=create_back_step_keyboard())
+                await message.answer(
+                    text=name_text, reply_markup=create_back_step_keyboard()
+                )
             else:
                 # Если event_id None то остаемся в этом состоянии
                 await message.answer(event_id_text)
         else:
-            await message.answer(f'Регистрация на данный Турнир завершена')
+            await message.answer("Регистрация на данный Турнир завершена")
             # await message.answer(text=f'{message.from_user.first_name}, {event_id_text}')
             # # Если event_id None то остаемся в этом состоянии
             await message.answer(event_id_another_text)
@@ -251,12 +307,12 @@ async def tel_handler(message: Message, state: FSMContext):
         await typing(message)
         await message.answer(text=team_id_text, reply_markup=academy_keyboard)
     except ValidationError as e:
-        error = str(e.errors()[0]['msg'])
+        error = str(e.errors()[0]["msg"])
         await message.answer(error)
 
 
 # --- Handler Academy ---
-@users.callback_query(Form.team_id, F.data.startswith('ac_'))
+@users.callback_query(Form.team_id, F.data.startswith("ac_"))
 async def team_id_info(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик выбора академии.
@@ -267,14 +323,19 @@ async def team_id_info(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     await callback.answer()
-    index = int(callback.data.replace('ac_', ''))
+    index = int(callback.data.replace("ac_", ""))
     await state.update_data(team_id=index)
-    await transition_selection(callback, state, Form.age_id,
-                               age_id_text, await create_age_division_keyboard(state))
+    await transition_selection(
+        callback,
+        state,
+        Form.age_id,
+        age_id_text,
+        await create_age_division_keyboard(state),
+    )
 
 
 # --- Handler Age Division ---
-@users.callback_query(Form.age_id, F.data.startswith('age_'))
+@users.callback_query(Form.age_id, F.data.startswith("age_"))
 async def age_id_info(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик выбора возрастной категории.
@@ -285,14 +346,19 @@ async def age_id_info(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     await callback.answer()
-    index = int(callback.data.replace('age_', ''))
+    index = int(callback.data.replace("age_", ""))
     await state.update_data(age_id=index)
-    await transition_selection(callback, state, Form.weight_id,
-                               weight_info_text, await create_weight_keyboard(state))
+    await transition_selection(
+        callback,
+        state,
+        Form.weight_id,
+        weight_info_text,
+        await create_weight_keyboard(state),
+    )
 
 
 # --- Handler Weight Division ---
-@users.callback_query(Form.weight_id, F.data.startswith('w_'))
+@users.callback_query(Form.weight_id, F.data.startswith("w_"))
 async def weight_id_info(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик выбора весовой категории.
@@ -303,7 +369,7 @@ async def weight_id_info(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     await callback.answer()
-    index = int(callback.data.replace('w_', ''))
+    index = int(callback.data.replace("w_", ""))
     await state.update_data(weight_id=index)
 
     event_id = await get_event_id(state)
@@ -313,20 +379,35 @@ async def weight_id_info(callback: CallbackQuery, state: FSMContext):
         no_division_set = check_flag & EVENT_FLAG_NO_DIVISION
         # проверяем стоят ли обе галки в админке Шака на разделение по дисциплинам и поясам
         if no_sex_division_set and no_division_set:
-            await transition_selection(callback, state, Form.confirm,
-                                       confirm_text, create_confirm_registration_keyboard())
+            await transition_selection(
+                callback,
+                state,
+                Form.confirm,
+                confirm_text,
+                create_confirm_registration_keyboard(),
+            )
         # проверяем стоит ли галка в админке Шака на разделение по дисциплинам(ги/ноу ги) sex_divisions
         elif not no_sex_division_set:
-            await transition_selection(callback, state, Form.sex_id,
-                                       sex_info_text, await create_sex_div_keyboard(state))
+            await transition_selection(
+                callback,
+                state,
+                Form.sex_id,
+                sex_info_text,
+                await create_sex_div_keyboard(state),
+            )
         # проверяем стоит ли галка в админке Шака на разделение по опыту(поясам) belt_divisions
         elif not no_division_set:
-            await transition_selection(callback, state, Form.div_id,
-                                       division_id_text, await create_division_keyboard(state))
+            await transition_selection(
+                callback,
+                state,
+                Form.div_id,
+                division_id_text,
+                await create_division_keyboard(state),
+            )
 
 
 # --- Handler Sex Division ---
-@users.callback_query(Form.sex_id, F.data.startswith('sex_'))
+@users.callback_query(Form.sex_id, F.data.startswith("sex_"))
 async def sex_id_info(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик выбора пола.
@@ -337,22 +418,32 @@ async def sex_id_info(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     await callback.answer()
-    index = int(callback.data.replace('sex_', ''))
+    index = int(callback.data.replace("sex_", ""))
     await state.update_data(sex_id=index)
     event_id = await get_event_id(state)
     async with ShakaSportsApiClient(event_id) as client:
         check_flag = await client.get_flags_event()
         no_division_set = check_flag & EVENT_FLAG_NO_DIVISION
         if not no_division_set:
-            await transition_selection(callback, state, Form.div_id,
-                                       division_id_text, await create_division_keyboard(state))
+            await transition_selection(
+                callback,
+                state,
+                Form.div_id,
+                division_id_text,
+                await create_division_keyboard(state),
+            )
         else:
-            await transition_selection(callback, state, Form.confirm,
-                                       confirm_text, create_confirm_registration_keyboard())
+            await transition_selection(
+                callback,
+                state,
+                Form.confirm,
+                confirm_text,
+                create_confirm_registration_keyboard(),
+            )
 
 
 # --- Handler Division ---
-@users.callback_query(Form.div_id, F.data.startswith('div_'))
+@users.callback_query(Form.div_id, F.data.startswith("div_"))
 async def division_id_info(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик выбора уровня подготовки (пояса).
@@ -363,14 +454,19 @@ async def division_id_info(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): Объект FSM контекста.
     """
     await callback.answer()
-    index = int(callback.data.replace('div_', ''))
+    index = int(callback.data.replace("div_", ""))
     await state.update_data(div_id=index)
-    await transition_selection(callback, state, Form.confirm,
-                               confirm_text, create_confirm_registration_keyboard())
+    await transition_selection(
+        callback,
+        state,
+        Form.confirm,
+        confirm_text,
+        create_confirm_registration_keyboard(),
+    )
 
 
 # --- Handler Confirm Registration ---
-@users.callback_query(Form.confirm, F.data == 'confirm_reg')
+@users.callback_query(Form.confirm, F.data == "confirm_reg")
 async def confirm_registration(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик подтверждения регистрации.
@@ -382,7 +478,7 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
     """
     await callback.answer()
     data = await state.get_data()
-    age_id_index = data.get('age_id')
+    age_id_index = data.get("age_id")
     event_id = await get_event_id(state)
     async with ShakaSportsApiClient(event_id) as client:
         age_divisions = await client.get_age_divisions()
@@ -390,11 +486,11 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
         title = await client.get_event_title()
         age_divs_info = get_division_info(age_divisions)
         age_id = int(list(age_divs_info.keys())[age_id_index])
-        weight = data.get('weight_id')
-        sex = data.get('sex_id')
-        div = data.get('div_id')
-        team = str(data.get('team_id'))
-        confirm_message = f"Проверьте, пожалуйста, данные для регистрации!\n\n"
+        weight = data.get("weight_id")
+        sex = data.get("sex_id")
+        div = data.get("div_id")
+        team = str(data.get("team_id"))
+        confirm_message = "Проверьте, пожалуйста, данные для регистрации!\n\n"
         confirm_message += f"Мероприятие: {title}\n"
         confirm_message += f"Имя и фамилия: {data.get('name')}\n"
         confirm_message += f"Email: {data.get('email')}\n"
@@ -409,12 +505,17 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
 
         await callback.message.answer(confirm_message)
 
-        await transition_selection(callback, state, Form.finish,
-                                   make_choice_text, create_finish_registration_keyboard())
+        await transition_selection(
+            callback,
+            state,
+            Form.finish,
+            make_choice_text,
+            create_finish_registration_keyboard(),
+        )
 
 
 # --- Handler Finish Registration ---
-@users.callback_query(Form.finish, F.data == 'finish_reg')
+@users.callback_query(Form.finish, F.data == "finish_reg")
 async def finish_registration(callback: CallbackQuery, state: FSMContext):
     """
     Обработчик завершения регистрации.
@@ -429,39 +530,48 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
     async with ShakaSportsApiClient(event_id) as client:
         age_divisions = await client.get_age_divisions()
         data = await state.get_data()
-        name = data.get('name')
-        email = data.get('email')
-        tel = data.get('tel')
-        team_id = data.get('team_id')
-        age_index = data.get('age_id')
+        name = data.get("name")
+        email = data.get("email")
+        tel = data.get("tel")
+        team_id = data.get("team_id")
+        age_index = data.get("age_id")
         age_id = list(age_divisions.keys())[age_index]
-        sex = data.get('sex_id')
-        div = data.get('div_id')
-        weight = data.get('weight_id')
-        weights = list(age_divisions[age_id]['weights'].keys())[weight] if weight else None
-        belt_divisions = list(age_divisions[age_id]['belt_divisions'].keys())[div] if div else None
-        sex_divisions = list(age_divisions[age_id]['sex_divisions'].keys())[sex] if sex else None
+        sex = data.get("sex_id")
+        div = data.get("div_id")
+        weight = data.get("weight_id")
+        weights = (
+            list(age_divisions[age_id]["weights"].keys())[weight] if weight else None
+        )
+        belt_divisions = (
+            list(age_divisions[age_id]["belt_divisions"].keys())[div] if div else None
+        )
+        sex_divisions = (
+            list(age_divisions[age_id]["sex_divisions"].keys())[sex] if sex else None
+        )
 
         registration_data = {
             key: value
             for key, value in [
-                ('form[name]', name),
-                ('form[email]', email),
-                ('form[tel]', tel),
-                ('form[age_division]', age_id),
-                ('form[sex]', sex_divisions),
-                ('form[division_id]', belt_divisions),
-                ('form[weight_division]', weights),
-                ('form[team_id]', team_id),
+                ("form[name]", name),
+                ("form[email]", email),
+                ("form[tel]", tel),
+                ("form[age_division]", age_id),
+                ("form[sex]", sex_divisions),
+                ("form[division_id]", belt_divisions),
+                ("form[weight_division]", weights),
+                ("form[team_id]", team_id),
             ]
             if value is not None
-
         }
 
         response = await client.register_user(registration_data)
         await callback.message.answer(text=response)
-        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-        await get_statistics(callback=callback, reg_data=data, response=response)  #send statistics
+        await bot.delete_message(
+            chat_id=callback.message.chat.id, message_id=callback.message.message_id
+        )
+        await get_statistics(
+            callback=callback, reg_data=data, response=response
+        )  # send statistics
         await del_states_except_event(state)
     new_reg_keyboard = await create_new_reg_keyboard(state)
     await callback.message.answer(text=make_choice_text, reply_markup=new_reg_keyboard)
@@ -489,48 +599,106 @@ async def back_btn_handler(callback: CallbackQuery, state: FSMContext):
         if current_state == Form.name:
             await transition_selection(callback, state, Form.event_id, event_id_text)
         elif current_state == Form.email:
-            await transition_selection(callback, state, Form.name, name_text, create_back_step_keyboard())
+            await transition_selection(
+                callback, state, Form.name, name_text, create_back_step_keyboard()
+            )
         elif current_state == Form.tel:
-            await transition_selection(callback, state, Form.email, email_text, create_back_step_keyboard())
+            await transition_selection(
+                callback, state, Form.email, email_text, create_back_step_keyboard()
+            )
         elif current_state == Form.team_id:
-            await transition_selection(callback, state, Form.tel, tel_text, create_back_step_keyboard())
+            await transition_selection(
+                callback, state, Form.tel, tel_text, create_back_step_keyboard()
+            )
         elif current_state == Form.age_id:
-            await transition_selection(callback, state, Form.team_id, team_id_text, create_academy_keyboard())
+            await transition_selection(
+                callback, state, Form.team_id, team_id_text, create_academy_keyboard()
+            )
         elif current_state == Form.weight_id:
-            await transition_selection(callback, state, Form.age_id,
-                                       age_id_text, await create_age_division_keyboard(state))
+            await transition_selection(
+                callback,
+                state,
+                Form.age_id,
+                age_id_text,
+                await create_age_division_keyboard(state),
+            )
         elif current_state == Form.sex_id:
-            await transition_selection(callback, state, Form.weight_id,
-                                       weight_info_text, await create_weight_keyboard(state))
+            await transition_selection(
+                callback,
+                state,
+                Form.weight_id,
+                weight_info_text,
+                await create_weight_keyboard(state),
+            )
         elif current_state == Form.div_id:
             if not no_sex_division_set:
-                await transition_selection(callback, state, Form.sex_id,
-                                           sex_info_text, await create_sex_div_keyboard(state))
+                await transition_selection(
+                    callback,
+                    state,
+                    Form.sex_id,
+                    sex_info_text,
+                    await create_sex_div_keyboard(state),
+                )
             else:
-                await transition_selection(callback, state, Form.weight_id,
-                                           weight_info_text, await create_weight_keyboard(state))
+                await transition_selection(
+                    callback,
+                    state,
+                    Form.weight_id,
+                    weight_info_text,
+                    await create_weight_keyboard(state),
+                )
         elif current_state == Form.confirm:
             if not no_division_set:
-                await transition_selection(callback, state, Form.div_id,
-                                           division_id_text, await create_division_keyboard(state))
+                await transition_selection(
+                    callback,
+                    state,
+                    Form.div_id,
+                    division_id_text,
+                    await create_division_keyboard(state),
+                )
             else:
                 if not no_sex_division_set:
-                    await transition_selection(callback, state, Form.sex_id,
-                                               sex_info_text, await create_sex_div_keyboard(state))
+                    await transition_selection(
+                        callback,
+                        state,
+                        Form.sex_id,
+                        sex_info_text,
+                        await create_sex_div_keyboard(state),
+                    )
                 else:
-                    await transition_selection(callback, state, Form.weight_id,
-                                               weight_info_text, await create_weight_keyboard(state))
+                    await transition_selection(
+                        callback,
+                        state,
+                        Form.weight_id,
+                        weight_info_text,
+                        await create_weight_keyboard(state),
+                    )
         elif current_state == Form.finish:
             if not no_division_set:
-                await transition_selection(callback, state, Form.div_id,
-                                           division_id_text, await create_division_keyboard(state))
+                await transition_selection(
+                    callback,
+                    state,
+                    Form.div_id,
+                    division_id_text,
+                    await create_division_keyboard(state),
+                )
             else:
                 if not no_sex_division_set:
-                    await transition_selection(callback, state, Form.sex_id,
-                                               sex_info_text, await create_sex_div_keyboard(state))
+                    await transition_selection(
+                        callback,
+                        state,
+                        Form.sex_id,
+                        sex_info_text,
+                        await create_sex_div_keyboard(state),
+                    )
                 else:
-                    await transition_selection(callback, state, Form.weight_id,
-                                               weight_info_text, await create_weight_keyboard(state))
+                    await transition_selection(
+                        callback,
+                        state,
+                        Form.weight_id,
+                        weight_info_text,
+                        await create_weight_keyboard(state),
+                    )
         await callback.message.delete()
 
 
@@ -558,11 +726,12 @@ async def get_statistics(callback: CallbackQuery, reg_data, response):
     await bot.send_message(chat_id=ID, text=statistics_info)
 
 
-async def transition_selection(callback: CallbackQuery,
-                               state: FSMContext,
-                               form_state: str,
-                               info_text: str,
-                               keyboard: Optional[
-                                         Union[InlineKeyboardMarkup]] = None):
+async def transition_selection(
+    callback: CallbackQuery,
+    state: FSMContext,
+    form_state: str,
+    info_text: str,
+    keyboard: InlineKeyboardMarkup | None = None,
+):
     await state.set_state(form_state)
     await callback.message.answer(text=info_text, reply_markup=keyboard)

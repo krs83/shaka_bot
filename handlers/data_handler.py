@@ -31,7 +31,7 @@ async def get_event_id(state: FSMContext) -> Union[int, str, None]:
     data = await state.get_data()
     # Извлекаем значение по ключу 'event_id' из словаря data.
     # Если ключ не найден, метод get() вернет None.
-    event_id = data.get('event_id')
+    event_id = data.get("event_id")
     # Возвращаем полученный event_id.
     return event_id
 
@@ -50,13 +50,11 @@ def has_empty_dict(dict: Dict[Any, str]) -> Dict[Any, str]:
           В противном случае, вернется исходный словарь.
     """
     # Словарь по умолчанию, который будет возвращен, если есть пустые строки.
-    no_choice_dict = {
-        0: 'Без разделения'
-    }
+    no_choice_dict = {0: "Без разделения"}
     # Проходимся по всем значениям словаря.
     for val in dict.values():
         # Если хотя бы одно значение является пустой строкой...
-        if val == '':
+        if val == "":
             # Возвращаем словарь по умолчанию.
             return no_choice_dict
         # Если текущее значение не является пустой строкой...
@@ -103,7 +101,7 @@ async def get_valid_event_id(message: Message):
         return None
 
     logger.debug(f"URL разобран: {parsed_url}")
-    match = re.search(r'/(\d+)$', parsed_url.path)
+    match = re.search(r"/(\d+)$", parsed_url.path)
     if match:
         logger.debug(f"Найдено совпадение в URL: {match.group(0)}")
         event_id_str = match.group(1)
@@ -125,15 +123,15 @@ async def get_valid_event_id(message: Message):
 
 async def check_valid_event_id(message: Message, event_id):
     """
-   Проверяет, является ли event_id корректным, обращаясь к API ShakaSports.
+    Проверяет, является ли event_id корректным, обращаясь к API ShakaSports.
 
-   Args:
-       message: Объект сообщения от пользователя (для отправки ответа в случае ошибки).
-       event_id: Идентификатор события, который нужно проверить. Может быть целым числом или строкой.
+    Args:
+        message: Объект сообщения от пользователя (для отправки ответа в случае ошибки).
+        event_id: Идентификатор события, который нужно проверить. Может быть целым числом или строкой.
 
-   Returns:
-       Корректный event_id, если проверка прошла успешно, или None в случае ошибки.
-   """
+    Returns:
+        Корректный event_id, если проверка прошла успешно, или None в случае ошибки.
+    """
     logger.info(f"Начало проверки event_id: {event_id}")
     try:
         # Создаем экземпляр API клиента, передавая event_id
@@ -149,13 +147,15 @@ async def check_valid_event_id(message: Message, event_id):
         # Отправляем пользователю сообщение об ошибке.
         logger.warning(f"Ошибка при проверке event_id: {e}")
         await message.answer(
-            'Турнир не найден или организатор не открыл к нему доступ через бота, также, возможно, вы ввели '
-            'некорректную ссылку или номер.')
+            "Турнир не найден или организатор не открыл к нему доступ через бота, также, возможно, вы ввели "
+            "некорректную ссылку или номер."
+        )
         return None
-    except Exception as e:
+    except Exception:
         await message.answer(
-            'Турнир не найден или организатор не открыл к нему доступ через бота, также, возможно, вы ввели '
-            'некорректную ссылку или номер.')
+            "Турнир не найден или организатор не открыл к нему доступ через бота, также, возможно, вы ввели "
+            "некорректную ссылку или номер."
+        )
         return None
 
 
@@ -170,20 +170,21 @@ async def show_event_title(message: Message, event_id):
     """
     async with ShakaSportsApiClient(event_id) as client:
         title = await client.get_event_title()
-        await message.answer(f'Турнир найден - {title}')
+        await message.answer(f"Турнир найден - {title}")
+
 
 def get_division_info(data_dict):
     """
-   Извлекает информацию о возрастных дивизионах из словаря.
+    Извлекает информацию о возрастных дивизионах из словаря.
 
-   Args:
-       data_dict: Словарь, содержащий информацию о дивизионах.
-                  Ожидается, что значениями могут быть словари, содержащие ключи 'id' и 'title'.
+    Args:
+        data_dict: Словарь, содержащий информацию о дивизионах.
+                   Ожидается, что значениями могут быть словари, содержащие ключи 'id' и 'title'.
 
-   Returns:
-        Словарь, где ключами являются идентификаторы дивизионов (id), а значениями - их названия (title).
-        Возвращает пустой словарь, если входные данные не являются словарем или не содержат нужную структуру.
-   """
+    Returns:
+         Словарь, где ключами являются идентификаторы дивизионов (id), а значениями - их названия (title).
+         Возвращает пустой словарь, если входные данные не являются словарем или не содержат нужную структуру.
+    """
     # Проверяем, является ли входной параметр словарем.
     if not isinstance(data_dict, dict):
         # Если не является, возвращаем пустой словарь.
@@ -194,7 +195,7 @@ def get_division_info(data_dict):
     # Проходимся по всем парам ключ-значение во входном словаре.
     for key, value in data_dict.items():
         # Проверяем, является ли значение словарем и содержит ли ключи 'id' и 'title'.
-        if isinstance(value, dict) and 'id' in value and 'title' in value:
+        if isinstance(value, dict) and "id" in value and "title" in value:
             # Если да, то добавляем пару id - title в результирующий словарь.
-            age_division_dict[value['id']] = value['title']
+            age_division_dict[value["id"]] = value["title"]
     return age_division_dict

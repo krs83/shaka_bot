@@ -13,26 +13,28 @@ admin = Router()
 
 
 # --- admin HELP commands ---
-@admin.message(F.text == 'Help')
+@admin.message(F.text == "Help")
 async def make_help_handler(message: Message):
     if message.from_user.id == ID:
-        await message.answer("""X - Показать все состояния\nR - распарсить результаты турнира для AF академии""")
+        await message.answer(
+            """X - Показать все состояния\nR - распарсить результаты турнира для AF академии"""
+        )
     else:
         await message.answer(denied)
 
 
 # --- Handler show states Button ---
-@admin.message(F.text == 'X')
+@admin.message(F.text == "X")
 async def show_info_handler(message: Message, state: FSMContext):
     if message.from_user.id == ID:
         data = await state.get_data()
-        await message.answer(f'все состояния {data}')
+        await message.answer(f"все состояния {data}")
     else:
         await message.answer(denied)
 
 
 # --- Handler parsing AF Academy results ---
-@admin.message(F.text == 'R')
+@admin.message(F.text == "R")
 async def call_results(message: Message, state: FSMContext):
     if message.from_user.id == ID:
         await message.reply(event_id_text)
@@ -44,7 +46,7 @@ async def call_results(message: Message, state: FSMContext):
 @admin.message(Form.af_search_event_id)
 async def parse_af_results(message: Message, state: FSMContext):
     await state.update_data(af_search_event_id=message.text)
-    url = f'{url_results}{message.text}'
+    url = f"{url_results}{message.text}"
     async with ShakaSportsApiClient(message.text) as client:
         try:
             event_title = await client.get_event_title()

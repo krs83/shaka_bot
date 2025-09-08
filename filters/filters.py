@@ -25,7 +25,7 @@ class EmptyStateMessageFilter(Filter):
         data = await state.get_data()  # Получаем данные из текущего состояния FSM
         if data:
             return False  # Если есть данные, фильтр не срабатывает
-        if message.text == start_btn or message.text == '/start':
+        if message.text == start_btn or message.text == "/start":
             return False  # Если текст сообщения равен кнопке "Начать сначала", фильтр не срабатывает
         return True  # В остальных случаях фильтр срабатывает
 
@@ -47,9 +47,9 @@ class EmptyStateCallbackFilter(Filter):
         Returns:
             True, если фильтр срабатывает, False - в противном случае.
         """
-        data = await state.get_data() # Получаем данные из текущего состояния FSM
+        data = await state.get_data()  # Получаем данные из текущего состояния FSM
         if data:
-            return False # Если есть данные, фильтр не срабатывает
+            return False  # Если есть данные, фильтр не срабатывает
         if callback.data == start_btn:
             return False  # Если data callback'а равна кнопке "Начать сначала", фильтр не срабатывает
         return True  # В остальных случаях фильтр срабатывает

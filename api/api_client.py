@@ -10,8 +10,8 @@ import urllib.parse
 
 # --- Настройки API ---
 load_dotenv()
-API_SECRET = os.getenv('API_SECRET')
-SERVER_URL = 'https://shakasports.com'  # Базовый URL API сервера
+API_SECRET = os.getenv("API_SECRET")
+SERVER_URL = "https://shakasports.com"  # Базовый URL API сервера
 
 
 class ShakaSportsApiClient:
@@ -29,10 +29,18 @@ class ShakaSportsApiClient:
         """
         self.event_id = event_id  # ID мероприятия
         self.event_user_id = event_user_id  # ID спортсмена
-        self.session = aiohttp.ClientSession()  # Создаем сессию для повторного использования соединений
+        self.session = (
+            aiohttp.ClientSession()
+        )  # Создаем сессию для повторного использования соединений
 
-    async def _api_request(self, mode, data=None, method='get', content_type='application/x-www-form-urlencoded',
-                           is_event=True):
+    async def _api_request(
+        self,
+        mode,
+        data=None,
+        method="get",
+        content_type="application/x-www-form-urlencoded",
+        is_event=True,
+    ):
         """
         Общая функция для запросов к API.
 
@@ -51,27 +59,31 @@ class ShakaSportsApiClient:
             aiohttp.ClientError: Если произошла ошибка при выполнении запроса.
         """
         if is_event:
-            query_string = f'mode={mode}&id={self.event_id}&{API_SECRET}'
+            query_string = f"mode={mode}&id={self.event_id}&{API_SECRET}"
             hash_value = md5_hash(query_string)
-            url = f'{SERVER_URL}/pub/api.php?mode={mode}&id={self.event_id}&hash={hash_value}'
+            url = f"{SERVER_URL}/pub/api.php?mode={mode}&id={self.event_id}&hash={hash_value}"
         else:
             # если режим = event_info&event_user_id
-            query_string = f'mode={mode}={self.event_user_id}&{API_SECRET}'
+            query_string = f"mode={mode}={self.event_user_id}&{API_SECRET}"
             hash_value = md5_hash(query_string)
-            url = f'{SERVER_URL}/pub/api.php?mode={mode}={self.event_user_id}&hash={hash_value}'
+            url = f"{SERVER_URL}/pub/api.php?mode={mode}={self.event_user_id}&hash={hash_value}"
 
         headers = {}
         if content_type:
-            headers['Content-type'] = content_type
+            headers["Content-type"] = content_type
 
         try:
-            if method == 'get':
+            if method == "get":
                 async with self.session.get(url, timeout=30) as response:
                     response.raise_for_status()
                     return await response.text()
-            elif method == 'post':
-                postdata = urllib.parse.urlencode(data) if data else None  # encode data only if it exists
-                async with self.session.post(url=url, headers=headers, data=postdata, timeout=30) as response:
+            elif method == "post":
+                postdata = (
+                    urllib.parse.urlencode(data) if data else None
+                )  # encode data only if it exists
+                async with self.session.post(
+                    url=url, headers=headers, data=postdata, timeout=30
+                ) as response:
                     response.raise_for_status()
                     return await response.text()
             else:
@@ -83,6 +95,7 @@ class ShakaSportsApiClient:
     Чтобы использовать async with, ваш класс ShakaSportsApiClient должен быть асинхронным контекстным менеджером.
      Для этого он должен иметь методы __aenter__ и __aexit__.
     """
+
     async def __aenter__(self):
         return self
 
@@ -100,8 +113,10 @@ class ShakaSportsApiClient:
         Returns:
             dict: Сериализованный ответ от сервера.
         """
-        result_response = await self._api_request(mode='event_info')
-        serialized_response = await asyncio.to_thread(phpserialize.loads, result_response.encode('utf-8'))
+        result_response = await self._api_request(mode="event_info")
+        serialized_response = await asyncio.to_thread(
+            phpserialize.loads, result_response.encode("utf-8")
+        )
         return await asyncio.to_thread(decode_bytes, serialized_response)
 
     # Получение schedule расписание Турнира - ПЕРЕДЕЛАТЬ ВМЕСТЕ С ГЛАВНОЙ ФУНКЦИЕЙ
@@ -118,32 +133,32 @@ class ShakaSportsApiClient:
             dict: Данные о возрастных категориях.
         """
         event_info = await self.get_event_info()
-        rules = event_info['rules']
-        age_divisions = rules['age_divisions']
+        rules = event_info["rules"]
+        age_divisions = rules["age_divisions"]
         return age_divisions
 
     async def get_event_title(self):
         """
-       Получение названия события.
+        Получение названия события.
 
-       Returns:
-          str: Название события.
-       """
+        Returns:
+           str: Название события.
+        """
         event_info = await self.get_event_info()
-        event = event_info['event']
-        title = event['title']
+        event = event_info["event"]
+        title = event["title"]
         return title
 
     async def get_flags_event(self):
         """
-      Получение флагов события.
+        Получение флагов события.
 
-      Returns:
-         int: Флаг события.
-      """
+        Returns:
+           int: Флаг события.
+        """
         event_info = await self.get_event_info()
-        event = event_info['event']
-        flags = event['flags']
+        event = event_info["event"]
+        flags = event["flags"]
         return int(flags)
 
     async def reg_pay(self):
@@ -153,13 +168,17 @@ class ShakaSportsApiClient:
         Returns:
             str: Текст с информацией для оплаты.
         """
-        result_response = await self._api_request(mode='event_info&event_user_id', is_event=False)
-        serialized_response = await asyncio.to_thread(phpserialize.loads, result_response.encode('utf-8'))
+        result_response = await self._api_request(
+            mode="event_info&event_user_id", is_event=False
+        )
+        serialized_response = await asyncio.to_thread(
+            phpserialize.loads, result_response.encode("utf-8")
+        )
         # Получение информации о зарегистрированном участнике Турнира
         event_user_info = await asyncio.to_thread(decode_bytes, serialized_response)
-        event = event_user_info['event']
-        event_user = event_user_info['event_user']
-        title = event['title']
+        event = event_user_info["event"]
+        event_user = event_user_info["event_user"]
+        title = event["title"]
 
         # is_money2 = bool(int(event_user['flags']) & 0x10)
         # money = event_user['money']
@@ -168,8 +187,8 @@ class ShakaSportsApiClient:
         # Стоимость стартового взноса составляет {money_amount} рублей\n
 
         reg_text = f"""
-        {event_user['name']}, Вы зарегистрировались на турнир {title} в категорию {event_user['cat_title']}\n
-        {remove_html_tags(event['reg_text'])}\n
+        {event_user["name"]}, Вы зарегистрировались на турнир {title} в категорию {event_user["cat_title"]}\n
+        {remove_html_tags(event["reg_text"])}\n
         Если стартовый взнос не оплачен, заявка на турнир считается недействительной!
         """
         return reg_text
@@ -184,14 +203,18 @@ class ShakaSportsApiClient:
         Returns:
              str: Сообщение об успехе или ошибке регистрации.
         """
-        raw_response = await self._api_request(mode='register', data=registration_data, method='post')
-        serialized_response = await asyncio.to_thread(phpserialize.loads, raw_response.encode('utf-8'))
+        raw_response = await self._api_request(
+            mode="register", data=registration_data, method="post"
+        )
+        serialized_response = await asyncio.to_thread(
+            phpserialize.loads, raw_response.encode("utf-8")
+        )
         decoded_response = await asyncio.to_thread(decode_bytes, serialized_response)
-        if 'message' not in decoded_response:
-            self.event_user_id = decoded_response['event_user_id']
+        if "message" not in decoded_response:
+            self.event_user_id = decoded_response["event_user_id"]
             return await self.reg_pay()
         else:
-            return decoded_response['message']
+            return decoded_response["message"]
 
 
 def md5_hash(s):
@@ -223,9 +246,9 @@ def decode_bytes(data):
         return [decode_bytes(item) for item in data]
     if isinstance(data, bytes):
         try:
-            return data.decode('utf-8')
+            return data.decode("utf-8")
         except UnicodeDecodeError:
-            return data.decode('latin-1')
+            return data.decode("latin-1")
     return data
 
 
@@ -238,5 +261,5 @@ def remove_html_tags(text):
     Returns:
         Строка без HTML-тегов.
     """
-    clean_text = re.sub(r'<[^>]*>', '', text)
+    clean_text = re.sub(r"<[^>]*>", "", text)
     return clean_text

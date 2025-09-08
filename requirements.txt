@@ -24,6 +24,7 @@ pydantic==2.10.6
 pydantic_core==2.27.2
 python-dotenv==1.0.1
 requests==2.32.3
+ruff==0.12.12
 soupsieve==2.6
 typing_extensions==4.12.2
 urllib3==2.2.3

@@ -10,7 +10,7 @@ from handlers.admin import admin
 from dotenv import load_dotenv
 
 load_dotenv()
-bot = Bot(token=os.getenv('TOKEN'))
+bot = Bot(token=os.getenv("TOKEN"))
 
 
 async def main():
@@ -23,14 +23,12 @@ async def main():
     try:
         await dp.start_polling(bot)  # Запускаем polling напрямую
     except KeyboardInterrupt:
-        print('Бот остановлен')
+        print("Бот остановлен")
     finally:
         session: BaseSession = bot.session
-        await session.close() # Гарантируем закрытие сессии
+        await session.close()  # Гарантируем закрытие сессии
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
-
-

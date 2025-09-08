@@ -10,5 +10,5 @@ keyboard = ReplyKeyboardMarkup(
         [
             KeyboardButton(text=start_btn),  # Создаем кнопку с текстом "Начать сначала"
         ],
-    ]
+    ],
 )
