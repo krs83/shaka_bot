@@ -196,50 +196,6 @@ async def get_valid_name(message: Message, name: str) -> str | None:
 
     return name
 
-
-async def format_phone_number(message: Message, phone_number: str) -> str | None:
-    """
-    Принимает строку, проверяет, что она состоит только из цифр.
-    Если 11 цифр и первая цифра 8, то убирает первую 8.
-    Если начинается с +7 или 7 и 11 или 12 цифр, то убирает "+7" или "7".
-    Далее добавляет +7 в начало и форматирует номер в "+7 (XXX) XXX-XX-XX".
-    Отправляет сообщение об ошибке, если не удалось обработать.
-
-    Args:
-        message: Объект сообщения aiogram.
-        phone_number: Строка с номером телефона.
-
-    Returns:
-        Строку в формате "+7 (XXX) XXX-XX-XX" если валидно, None если нет.
-    """
-
-    if not isinstance(phone_number, str):
-        await message.answer('Пожалуйста, введите номер телефона текстом.')
-        return None
-
-    if not re.match(r'^\+?\d+$', phone_number):
-        await message.answer('Номер телефона должен содержать только цифры и может начинаться с +.')
-        return None
-
-    # Удаляем +7 если есть и если 12 символов
-    if phone_number.startswith("+7") and len(phone_number) == 12:
-        phone_number = phone_number[2:]
-
-    # Удаляем 7 если есть и если 11 символов
-    if phone_number.startswith("7") and len(phone_number) == 11:
-        phone_number = phone_number[1:]
-
-    # Удаляем 8 если есть и если 11 символов
-    if phone_number.startswith("8") and len(phone_number) == 11:
-        phone_number = phone_number[1:]
-
-    if len(phone_number) != 10:
-        await message.answer("Номер телефона должен состоять из 10 цифр.")
-        return None
-
-    formatted_number = f"+7 ({phone_number[0:3]}) {phone_number[3:6]}-{phone_number[6:8]}-{phone_number[8:10]}"
-    return formatted_number
-
 def get_division_info(data_dict):
     """
    Извлекает информацию о возрастных дивизионах из словаря.

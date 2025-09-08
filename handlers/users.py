@@ -13,7 +13,7 @@ from keyboards.inline_keyboards import *  # Импортируем все нуж
 from config import *
 from handlers.data_handler import *
 from handlers.data_handler import ShakaSportsApiClient
-from models.models import UserEmail
+from models.models import UserEmail, PhoneNumber
 from pydantic import ValidationError
 
 from states.form_states import Form
@@ -226,7 +226,7 @@ async def email_handler(message: Message, state: FSMContext):
         await state.set_state(Form.tel)
         await typing(message)
         await message.answer(tel_text, reply_markup=create_back_step_keyboard())
-    except ValidationError as e:
+    except ValidationError:
         await message.answer(invalid_email)
 
 
@@ -241,15 +241,17 @@ async def tel_handler(message: Message, state: FSMContext):
         message (Message): Объект сообщения пользователя.
         state (FSMContext): Объект FSM контекста.
     """
-    tel = await format_phone_number(message, message.text)
-    if tel:
-        await state.update_data(tel=tel)
+    try:
+        tel = PhoneNumber(number=message.text)
+        valid_tel = tel.number
+        await state.update_data(tel=valid_tel)
         await state.set_state(Form.team_id)
         academy_keyboard = create_academy_keyboard()
         await typing(message)
         await message.answer(text=team_id_text, reply_markup=academy_keyboard)
-    else:
-        await message.answer(tel_text)
+    except ValidationError as e:
+        error = str(e.errors()[0]['msg'])
+        await message.answer(error)
 
 
 # --- Handler Academy ---
