@@ -1,0 +1,7 @@
+.gigaide/
+.idea/
+drawings/
+venv/
+.env
+.git/
+dockerfile
